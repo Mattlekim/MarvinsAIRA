@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using SharpDX.DirectInput;
+using WinRT;
 
 namespace MarvinsAIRA
 {
@@ -406,7 +407,12 @@ namespace MarvinsAIRA
 			_ffb_reinitializeNeeded = true;
 		}
 
-		public void UpdateForceFeedback( float deltaTime, bool checkButtons, nint windowHandle )
+		/// <summary>
+		/// used to detect the time that the wheel has been under a certain threashfold for auto return to center
+		/// </summary>
+        float _timeUnderThreashfold = 0;
+
+        public void UpdateForceFeedback( float deltaTime, bool checkButtons, nint windowHandle )
 		{
 			if ( checkButtons )
 			{
@@ -657,54 +663,43 @@ namespace MarvinsAIRA
 				_settings_pauseSerialization = false;
 			}
 
-			if ( !_irsdk_isOnTrack && Settings.AutoCenterWheel && ( !_ffb_playingBackNow || !Settings.PlaybackSendToDevice ) )
+			if (!_irsdk_isOnTrack && Settings.AutoCenterWheel && (!_ffb_playingBackNow || !Settings.PlaybackSendToDevice))
 			{
-				var leftRange = (float) ( Settings.WheelCenterValue - Settings.WheelMinValue );
-				var rightRange = (float) ( Settings.WheelCenterValue - Settings.WheelMaxValue );
 
-				if ( ( leftRange != 0f ) && ( rightRange != 0f ) )
+				//WriteLine($"{_timeUnderThreashfold}");
+				if (Settings.WheelCenterValue != 0)
+					if (Math.Abs(_input_currentWheelVelocity) < 100)
+					{
+						_timeUnderThreashfold += deltaTime;
+					}
+					else
+						_timeUnderThreashfold = 0;
+
+				if (_timeUnderThreashfold < 1.5f)
 				{
-					var leftDelta = (float) ( Input_CurrentWheelPosition - Settings.WheelMinValue );
-					var rightDelta = (float) ( Input_CurrentWheelPosition - Settings.WheelMaxValue );
+					float percentage = ((float)(Input_CurrentWheelPosition - Settings.WheelCenterValue) / (float)Settings.WheelCenterValue);
+					percentage = Math.Clamp(percentage, -1, 1);
+					float normalizedWheelVelocity = Math.Abs(_input_currentWheelVelocity / deltaTime);
 
-					var leftPercentage = 1f - leftDelta / leftRange;
-					var rightPercentage = 1f - rightDelta / rightRange;
+					int forceMultiplyer = 8;
+					int minForce = 150;
+					int forceMagnitude = 0;
+					
 
-					var normalizedWheelVelocity = Math.Abs( _input_currentWheelVelocity / deltaTime );
-					var targetWheelVelocity = 10000f;
+                    if (Math.Sign(_input_currentWheelVelocity) != Math.Sign(percentage))
+                        percentage = percentage * percentage * percentage; //if we are moving in the correct direction use a cubic curve to make the wheel return to center smother
 
-					var forceMagnitudeScale = Math.Max( 0f, Math.Min( 1f, ( targetWheelVelocity - normalizedWheelVelocity ) / targetWheelVelocity ) );
-					var forceMagnitude = 0;
+                    forceMagnitude = (int)(Settings.AutoCenterWheelStrength * percentage) * forceMultiplyer;
 
-					if ( leftPercentage >= 0.015f )
-					{
-						if ( normalizedWheelVelocity < targetWheelVelocity )
-						{
-							forceMagnitude = -Settings.AutoCenterWheelStrength;
-						}
-						else
-						{
-							forceMagnitude = -Settings.AutoCenterWheelStrength * 2 / 3;
-						}
-					}
-					else if ( rightPercentage >= 0.015f )
-					{
+					if (Math.Abs(forceMagnitude) < minForce)
+						forceMagnitude = minForce * Math.Sign(percentage);
 
-						if ( normalizedWheelVelocity <= targetWheelVelocity )
-						{
-							forceMagnitude = Settings.AutoCenterWheelStrength;
-						}
-						else
-						{
-							forceMagnitude = Settings.AutoCenterWheelStrength * 2 / 3;
-						}
-					}
-
-					UpdateConstantForce( [ forceMagnitude ] );
+					UpdateConstantForce([forceMagnitude]);
 				}
+
 			}
 		}
-
+	
 		public bool TogglePrettyGraph()
 		{
 			_ffb_drawPrettyGraph = !_ffb_drawPrettyGraph;
@@ -748,12 +743,20 @@ namespace MarvinsAIRA
 			_ffb_steadyStateWheelTorque = 0;
 		}
 
+		private bool _hasCenterPostion = false;
 		private void UpdateForceFeedback()
 		{
 			if ( !Settings.ForceFeedbackEnabled )
 			{
 				return;
 			}
+
+			if (!_hasCenterPostion)
+				if (Math.Abs(_irsdk_wheelAngle) < .1f)
+				{
+					Settings.WheelCenterValue = Input_CurrentWheelPosition; //set center position for wheel
+					_hasCenterPostion = true;
+				}
 
 			var processThisFrame = ( Interlocked.Decrement( ref _ffb_updatesToSkip ) < 0 );
 
