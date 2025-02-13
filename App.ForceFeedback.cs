@@ -1098,14 +1098,7 @@ namespace MarvinsAIRA
 					}
 				}
 
-				float dist = 0;
-				dist = ( _irsdk_steeringWheelMaxAngle * .5f) - Math.Abs(_irsdk_steeringWheelAngle);
-
-                if (_irsdk_steeringWheelAngle < -_irsdk_steeringWheelMaxAngle * .5f)
-					_ffb_outputWheelMagnitudeBuffer[x] = (int)(Settings.WheelMaxForce * -1000 * dist);
-
-                if (_irsdk_steeringWheelAngle > _irsdk_steeringWheelMaxAngle * .5f)
-                    _ffb_outputWheelMagnitudeBuffer[x] = (int)(Settings.WheelMaxForce * 1000 * dist);
+				
                 // reset the magnitude index now
 
                 _ffb_resetOutputWheelMagnitudeBufferTimerNow = 1;

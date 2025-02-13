@@ -24,7 +24,6 @@ namespace MarvinsAIRA
 		private IRacingSdkDatum? _irsdk_latAccelDatum = null;
 		private IRacingSdkDatum? _irsdk_longAccelDatum = null;
 		private IRacingSdkDatum? _irsdk_steeringWheelAngleDatum = null;
-        private IRacingSdkDatum? _irsdk_steeringWheelMaxAngleDatum = null;
         private IRacingSdkDatum? _irsdk_displayUnitsDatum = null;
 
 		private bool _irsdk_telemetryDataInitialized = false;
@@ -46,7 +45,6 @@ namespace MarvinsAIRA
 		public float _irsdk_latAccel = 0;
 		public float _irsdk_longAccel = 0;
 		public float _irsdk_steeringWheelAngle = 0;
-        public float _irsdk_steeringWheelMaxAngle = 0;
         public int _irsdk_displayUnits = 0;
 
 		public float _irsdk_gForce = 0;
@@ -196,7 +194,6 @@ namespace MarvinsAIRA
 				_irsdk_latAccelDatum = _irsdk.Data.TelemetryDataProperties[ "LatAccel" ];
 				_irsdk_longAccelDatum = _irsdk.Data.TelemetryDataProperties[ "LongAccel" ];
 				_irsdk_steeringWheelAngleDatum = _irsdk.Data.TelemetryDataProperties[ "SteeringWheelAngle" ];
-                _irsdk_steeringWheelMaxAngleDatum = _irsdk.Data.TelemetryDataProperties["SteeringWheelAngleMax"];
                 _irsdk_displayUnitsDatum = _irsdk.Data.TelemetryDataProperties[ "DisplayUnits" ];
 
 				_irsdk_telemetryDataInitialized = true;
@@ -219,7 +216,6 @@ namespace MarvinsAIRA
 			_irsdk_latAccel = _irsdk.Data.GetFloat( _irsdk_latAccelDatum );
 			_irsdk_longAccel = _irsdk.Data.GetFloat(_irsdk_longAccelDatum );
 			_irsdk_steeringWheelAngle = _irsdk.Data.GetFloat( _irsdk_steeringWheelAngleDatum );
-            _irsdk_steeringWheelMaxAngle = _irsdk.Data.GetFloat(_irsdk_steeringWheelMaxAngleDatum);
             _irsdk_displayUnits = _irsdk.Data.GetInt( _irsdk_displayUnitsDatum );
 
 			var deltaTime = ( _irsdk_tickCount - _irsdk_tickCountLastFrame ) / (float) _irsdk_tickRate;
