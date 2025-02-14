@@ -800,6 +800,7 @@ namespace MarvinsAIRA
 			_ffb_steadyStateWheelTorque = 0;
 		}
 
+		private bool _isSetWheelAngle = false;
 		private void UpdateForceFeedback()
 		{
 			if ( !Settings.ForceFeedbackEnabled )
@@ -807,10 +808,13 @@ namespace MarvinsAIRA
 				return;
 			}
 
-            if (Math.Abs(_irsdk_steeringWheelAngle) < .1f)
-            {
-                Settings.WheelCenterValue = Input_CurrentWheelPosition; //set center position for wheel
-            }
+			if (!_isSetWheelAngle)
+				if (_irsdk_isOnTrack)
+					if (Math.Abs(_irsdk_steeringWheelAngle) < .1f)
+					{
+						Settings.WheelCenterValue = Input_CurrentWheelPosition; //set center position for wheel
+						_isSetWheelAngle = true;
+					}
 
             var processThisFrame = ( Interlocked.Decrement( ref _ffb_updatesToSkip ) < 0 );
 
