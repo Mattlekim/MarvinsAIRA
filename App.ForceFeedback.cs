@@ -659,37 +659,51 @@ namespace MarvinsAIRA
 			if ( !_irsdk_isOnTrack && Settings.AutoCenterWheel && ( !_ffb_playingBackNow || !Settings.PlaybackSendToDevice ) )
 			{
 
-				if (Settings.AutoCenterWheelType == 2) //my costom wheel centering
+				if (Settings.AutoCenterWheelType == 2) //matts custom wheel centering
 				{
 					if (Settings.WheelCenterValue != 0) //make sure the center value is not 0. if it is we cannot center the wheel
-						if (Math.Abs(_input_currentWheelVelocity) < 100) //check if the wheel is moving slow enough to stop centering
-							_timeUnderThreashfold += deltaTime; 
+					{
+
+                        //work out percentage of distance from center
+                        float percentage = ((float)(Input_CurrentWheelPosition - Settings.WheelCenterValue) / (float)Settings.WheelCenterValue);
+
+						float percentageAbs = Math.Abs(percentage);
+						
+                        if (Math.Abs(_input_currentWheelVelocity) < 500 && percentageAbs < .1f) //check if the wheel is moving slow enough to stop centering
+							_timeUnderThreashfold += deltaTime;
 						else
 							_timeUnderThreashfold = 0;
 
-					if (_timeUnderThreashfold < 3f) //if the wheel has been under the threshold continue centering cocde
-					{
-						//work out percentage of distance from center
-						float percentage = ((float)(Input_CurrentWheelPosition - Settings.WheelCenterValue) / (float)Settings.WheelCenterValue);
-						//clamp between 1 and 0
-						percentage = Math.Clamp(percentage, -1, 1);
+						if (_timeUnderThreashfold < 1f) //if the wheel has been under the threshold continue centering cocde
+						{
+							
+							//clamp between 1 and 0
+							percentage = Math.Clamp(percentage, -1, 1);
 
-						//work out the force to apply to the wheel
-						int forceMultiplyer = 50;
-						int minForce = 100; //this is needed for some wheels, particaly belt drvin wheels that have inherent friction
-						//even my csl dd need this value for min force
-						int forceMagnitude = 0;
+							//work out the force to apply to the wheel
+							int forceMultiplyer = 50;
+							int minForce = 140; //this is needed for some wheels, particaly belt drvin wheels that have inherent friction
+												//even my csl dd need this value for min force
+							int forceMagnitude = 0;
+							//WriteLine($"{Math.Abs(percentage)}"); 
+							if (percentageAbs > .05)
+							{
+								//check that the wheel is moving in the correct direction to center it
+								if (Math.Sign(_input_currentWheelVelocity) != Math.Sign(percentage))
+									percentage = percentage * percentage * percentage; //if we are moving in the correct direction use a cubic curve to make the wheel return to center smother
 
-						//check that the wheel is moving in the correct direction to center it
-						if (Math.Sign(_input_currentWheelVelocity) != Math.Sign(percentage))
-							percentage = percentage * percentage * percentage; //if we are moving in the correct direction use a cubic curve to make the wheel return to center smother
+								forceMagnitude = (int)(Settings.AutoCenterWheelStrength * percentage) * forceMultiplyer; //multply all forces
 
-						forceMagnitude = (int)(Settings.AutoCenterWheelStrength * percentage) * forceMultiplyer; //multply all forces
+								if (Math.Abs(forceMagnitude) < minForce) //check that force is grater than min force
+									forceMagnitude = minForce * Math.Sign(forceMagnitude);
+							}
+							else
+								forceMagnitude = 0; //apply slight brake
 
-						if (Math.Abs(forceMagnitude) < minForce) //check that force is grater than min force
-							forceMagnitude = minForce * Math.Sign(percentage);
-
-                        UpdateConstantForce([forceMagnitude]);
+							UpdateConstantForce([forceMagnitude]);
+						}
+						else
+                            UpdateConstantForce([0]);
                     }
 				}
 				else
