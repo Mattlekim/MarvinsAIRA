@@ -669,7 +669,7 @@ namespace MarvinsAIRA
 
 						float percentageAbs = Math.Abs(percentage);
 						
-                        if (Math.Abs(_input_currentWheelVelocity) < 500 && percentageAbs < .1f) //check if the wheel is moving slow enough to stop centering
+                        if (Math.Abs(_input_currentWheelVelocity) < 500 && percentageAbs < .05f) //check if the wheel is moving slow enough to stop centering
 							_timeUnderThreashfold += deltaTime;
 						else
 							_timeUnderThreashfold = 0;
@@ -682,15 +682,15 @@ namespace MarvinsAIRA
 
 							//work out the force to apply to the wheel
 							int forceMultiplyer = 50;
-							int minForce = 140; //this is needed for some wheels, particaly belt drvin wheels that have inherent friction
+							int minForce = 350; //this is needed for some wheels, particaly belt drvin wheels that have inherent friction
 												//even my csl dd need this value for min force
 							int forceMagnitude = 0;
 							//WriteLine($"{Math.Abs(percentage)}"); 
 							if (percentageAbs > .05)
 							{
 								//check that the wheel is moving in the correct direction to center it
-								if (Math.Sign(_input_currentWheelVelocity) != Math.Sign(percentage))
-									percentage = percentage * percentage * percentage; //if we are moving in the correct direction use a cubic curve to make the wheel return to center smother
+								if (Math.Sign(_input_currentWheelVelocity) != Math.Sign(percentage) && Math.Abs(_input_currentWheelVelocity) > 150)
+									percentage = percentage * percentage * Math.Sign(percentage); //if we are moving in the correct direction use a cubic curve to make the wheel return to center smother
 
 								forceMagnitude = (int)(Settings.AutoCenterWheelStrength * percentage) * forceMultiplyer; //multply all forces
 
@@ -700,7 +700,9 @@ namespace MarvinsAIRA
 							else
 								forceMagnitude = 0; //apply slight brake
 
-							UpdateConstantForce([forceMagnitude]);
+                         //   Console.SetCursorPosition(0, 0);
+                            Console.WriteLine(forceMagnitude);
+                            UpdateConstantForce([forceMagnitude]);
 						}
 						else
                             UpdateConstantForce([0]);
@@ -763,7 +765,7 @@ namespace MarvinsAIRA
 								forceMagnitude = (int)(rightPercentage * DI_FFNOMINALMAX * Settings.AutoCenterWheelStrength / 100f);
 							}
 						}
-
+						
 						UpdateConstantForce([forceMagnitude]);
 					}
 				}
